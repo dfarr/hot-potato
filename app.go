@@ -206,6 +206,17 @@ func CheckPotato(pass string, game string, token string) {
         SendMessage(next, "You're on fire!", token)
 
         db.Exec("update game set active=0 where uuid=?", game)
+
+        rows, _ := db.Query("select distinct back from pass where game=? and back!=?", game, next)
+
+        for rows.Next() {
+
+            var send string
+
+            rows.Scan(&send)
+
+            SendMessage(send, next " is on fire!", token)
+        }
     }
 }
 
