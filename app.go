@@ -113,7 +113,7 @@ func HotPWrapper(fn func(http.ResponseWriter, *http.Request, SlackMessage)) http
 
         if args.OK {
             for _, member := range args.Members {
-                if "@"+member.Name == a.Next && member.Presence == "active" {
+                if "@" + member.Name == a.Next && member.Presence == "active" {
                     pres = true
                 }
             }
@@ -146,7 +146,7 @@ func HotPHandler(w http.ResponseWriter, r *http.Request, args SlackMessage) {
 
         pass := uuid.NewV4().String()
 
-        SendMessage(args.Next, "Hot potato from "+args.Back+", pass it on! (hint: use `/pass-it-on`)", args.Token)
+        SendMessage(args.Next, "Hot potato from " + args.Back + ", pass it on! (hint: use `/pass-it-on`)", args.Token)
 
         db.Exec("insert into pass values (?, ?, ?, ?, ?)", pass, game, args.Back, args.Next, time.Now())
 
@@ -177,7 +177,7 @@ func PassHandler(w http.ResponseWriter, r *http.Request, args SlackMessage) {
 
         pass := uuid.NewV4().String()
 
-        SendMessage(args.Next, "Hot potato from "+args.Back+", pass it on! (hint: use `/pass-it-on`)", args.Token)
+        SendMessage(args.Next, "Hot potato from " + args.Back + ", pass it on! (hint: use `/pass-it-on`)", args.Token)
 
         db.Exec("insert into pass values (?, ?, ?, ?, ?)", pass, game, args.Back, args.Next, time.Now())
 
@@ -215,7 +215,7 @@ func CheckPotato(pass string, game string, token string) {
 
             rows.Scan(&send)
 
-            SendMessage(send, next " is on fire!", token)
+            SendMessage(send, next + " is on fire!", token)
         }
     }
 }
