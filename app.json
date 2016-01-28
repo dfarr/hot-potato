@@ -1,0 +1,11 @@
+{
+  "name": "hot-potato",
+  "description": "A Hot Potato game for Slack",
+  "keywords": [
+    "go",
+    "slack"
+  ],
+  "image": "heroku/go:1.5",
+  "mount_dir": "src/github.com/dfarr/hot-potato",
+  "repository": "http://github.com/dfarr/hot-potato"
+}
