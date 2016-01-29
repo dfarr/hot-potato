@@ -183,6 +183,17 @@ func PassHandler(w http.ResponseWriter, r *http.Request, args SlackMessage) {
 
         go CheckPotato(pass, game, args.Token)
 
+        rows, _ := db.Query("select distinct back from pass where game=? and back!=? and back!=?", game, args.Back, args.Next)
+
+        for rows.Next() {
+
+            var send string
+
+            rows.Scan(&send)
+
+            SendMessage(send, args.Back + " passed the potato to " + args.Next + "!", args.Token)
+        }
+
         reply = "Hot potato passed to " + args.Next
     }
 
