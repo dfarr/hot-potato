@@ -1,9 +1,6 @@
 {
 	"ImportPath": "github.com/dfarr/hot-potato",
 	"GoVersion": "go1.5",
-	"Packages": [
-		"./..."
-	],
 	"Deps": [
 		{
 			"ImportPath": "github.com/gorilla/context",
@@ -14,9 +11,9 @@
 			"Rev": "26a6070f849969ba72b72256e9f14cf519751690"
 		},
 		{
-			"ImportPath": "github.com/mattn/go-sqlite3",
-			"Comment": "v1.1.0-30-g5510da3",
-			"Rev": "5510da399572b4962c020184bb291120c0a412e2"
+			"ImportPath": "github.com/lib/pq",
+			"Comment": "go1.0-cutoff-75-gf59175c",
+			"Rev": "f59175c2986495ff94109dee3835c504a96c3e81"
 		},
 		{
 			"ImportPath": "github.com/satori/go.uuid",

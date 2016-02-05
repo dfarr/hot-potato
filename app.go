@@ -9,14 +9,15 @@ import (
     "net/http"
     "database/sql"
     "encoding/json"
-    _ "path/filepath"
+    "html/template"
     "github.com/dfarr/hot-potato/Godeps/_workspace/src/github.com/gorilla/mux"
     "github.com/dfarr/hot-potato/Godeps/_workspace/src/github.com/satori/go.uuid"
-    _ "github.com/dfarr/hot-potato/Godeps/_workspace/src/github.com/mattn/go-sqlite3"
+    _ "github.com/dfarr/hot-potato/Godeps/_workspace/src/github.com/lib/pq"
 )
 
 var db *sql.DB
 
+var DB = os.Getenv("DB")
 var PORT = os.Getenv("PORT")
 var SLACK_CLIENT = os.Getenv("SLACK_CLIENT")
 var SLACK_SECRET = os.Getenv("SLACK_SECRET")
@@ -54,7 +55,8 @@ type SlackMessage struct {
 ///////////////////////////////////////////////////////
 
 func RootHandler(w http.ResponseWriter, r *http.Request) {
-    http.ServeFile(w, r, "index.html")
+    tmpl, _ := template.ParseFiles("index.html")
+    tmpl.Execute(w, map[string]string{"Client": SLACK_CLIENT})
 }
 
 func AuthHandler(w http.ResponseWriter, r *http.Request) {
@@ -82,7 +84,7 @@ func AuthHandler(w http.ResponseWriter, r *http.Request) {
     }
 
     if args.OK {
-        db.Exec("insert into team values (?, ?)", args.Team_id, args.Bot.Bot_access_token)
+        db.Exec("insert into team values ($1, $2)", args.Team_id, args.Bot.Bot_access_token)
     }
 
     http.Redirect(w, r, "/", 301)
@@ -95,7 +97,7 @@ func HotPWrapper(fn func(http.ResponseWriter, *http.Request, SlackMessage)) http
 
         a := SlackMessage{Team: r.FormValue("team_id"), Back: "@" + r.FormValue("user_name"), Next: r.FormValue("text")}
 
-        s, _ := db.Prepare("select token from team where uuid=?")
+        s, _ := db.Prepare("select token from team where uuid=$1")
 
         s.QueryRow(a.Team).Scan(&a.Token)
 
@@ -113,7 +115,7 @@ func HotPWrapper(fn func(http.ResponseWriter, *http.Request, SlackMessage)) http
 
         if args.OK {
             for _, member := range args.Members {
-                if "@" + member.Name == a.Next && member.Presence == "active" {
+                if "@"+member.Name == a.Next && member.Presence == "active" {
                     pres = true
                 }
             }
@@ -134,7 +136,7 @@ func HotPHandler(w http.ResponseWriter, r *http.Request, args SlackMessage) {
 
     game := uuid.NewV4().String()
 
-    stmt, _ := db.Exec("insert into game(uuid, team, active) select ?, ?, 1 where not exists(select 1 from game where team=? and active=1)", game, args.Team, args.Team)
+    stmt, _ := db.Exec("insert into game(uuid, team, active) select $1, $2, true where not exists(select 1 from game where team=$2 and active=true)", game, args.Team)
 
     rows, _ := stmt.RowsAffected()
 
@@ -146,9 +148,9 @@ func HotPHandler(w http.ResponseWriter, r *http.Request, args SlackMessage) {
 
         pass := uuid.NewV4().String()
 
-        SendMessage(args.Next, "Hot potato from " + args.Back + ", pass it on! (hint: use `/pass-it-on`)", args.Token)
+        SendMessage(args.Next, "Hot potato from "+args.Back+", pass it on! (hint: use `/pass-it-on`)", args.Token)
 
-        db.Exec("insert into pass values (?, ?, ?, ?, ?)", pass, game, args.Back, args.Next, time.Now())
+        db.Exec("insert into pass values ($1, $2, $3, $4, $5)", pass, game, args.Back, args.Next, time.Now())
 
         go CheckPotato(pass, game, args.Token)
 
@@ -165,7 +167,7 @@ func PassHandler(w http.ResponseWriter, r *http.Request, args SlackMessage) {
     var next string
     var reply string
 
-    stmt, _ := db.Prepare("select game.uuid, pass.back, pass.next from game, pass where game.uuid=pass.game and game.team=? and game.active=1 order by pass.time desc limit 1")
+    stmt, _ := db.Prepare("select game.uuid, pass.back, pass.next from game, pass where game.uuid=pass.game and game.team=$1 and game.active=true order by pass.time desc limit 1")
 
     stmt.QueryRow(args.Team).Scan(&game, &back, &next)
 
@@ -177,13 +179,13 @@ func PassHandler(w http.ResponseWriter, r *http.Request, args SlackMessage) {
 
         pass := uuid.NewV4().String()
 
-        SendMessage(args.Next, "Hot potato from " + args.Back + ", pass it on! (hint: use `/pass-it-on`)", args.Token)
+        SendMessage(args.Next, "Hot potato from "+args.Back+", pass it on! (hint: use `/pass-it-on`)", args.Token)
 
-        db.Exec("insert into pass values (?, ?, ?, ?, ?)", pass, game, args.Back, args.Next, time.Now())
+        db.Exec("insert into pass values ($1, $2, $3, $4, $5)", pass, game, args.Back, args.Next, time.Now())
 
         go CheckPotato(pass, game, args.Token)
 
-        rows, _ := db.Query("select distinct back from pass where game=? and back!=? and back!=?", game, args.Back, args.Next)
+        rows, _ := db.Query("select distinct back from pass where game=$1 and back!=$2 and back!=$3", game, args.Back, args.Next)
 
         for rows.Next() {
 
@@ -191,7 +193,7 @@ func PassHandler(w http.ResponseWriter, r *http.Request, args SlackMessage) {
 
             rows.Scan(&send)
 
-            SendMessage(send, args.Back + " passed the potato to " + args.Next + "!", args.Token)
+            SendMessage(send, args.Back+" passed the potato to "+args.Next+"!", args.Token)
         }
 
         reply = "Hot potato passed to " + args.Next
@@ -208,7 +210,7 @@ func CheckPotato(pass string, game string, token string) {
     var back string
     var next string
 
-    stmt, _ := db.Prepare("select uuid, back, next from pass where game=? order by time desc limit 1")
+    stmt, _ := db.Prepare("select uuid, back, next from pass where game=$1 order by time desc limit 1")
 
     stmt.QueryRow(game).Scan(&uuid, &back, &next)
 
@@ -216,9 +218,9 @@ func CheckPotato(pass string, game string, token string) {
 
         SendMessage(next, "You're on fire!", token)
 
-        db.Exec("update game set active=0 where uuid=?", game)
+        db.Exec("update game set active=false where uuid=$1", game)
 
-        rows, _ := db.Query("select distinct back from pass where game=? and back!=?", game, next)
+        rows, _ := db.Query("select distinct back from pass where game=$1 and back!=$2", game, next)
 
         for rows.Next() {
 
@@ -226,7 +228,7 @@ func CheckPotato(pass string, game string, token string) {
 
             rows.Scan(&send)
 
-            SendMessage(send, next + " is on fire!", token)
+            SendMessage(send, next+" is on fire!", token)
         }
     }
 }
@@ -252,7 +254,7 @@ func main() {
 
     var err1 error
 
-    db, err1 = sql.Open("sqlite3", "db.db")
+    db, err1 = sql.Open("postgres", DB)
 
     if err1 != nil {
         log.Fatal(err1)
@@ -266,9 +268,9 @@ func main() {
         log.Fatal(err2)
     }
 
-    tx.Exec("create table if not exists game (uuid uuid primary key, team text, active boolean)")
-    tx.Exec("create table if not exists team (uuid uuid primary key, token text)")
-    tx.Exec("create table if not exists pass (uuid uuid primary key, game uuid, back text not null, next text not null, time datetime, foreign key(game) references game(uuid))")
+    tx.Exec("create table if not exists game (uuid text primary key, team text, active boolean)")
+    tx.Exec("create table if not exists team (uuid text primary key, token text)")
+    tx.Exec("create table if not exists pass (uuid text primary key, game text, back text, next text, time timestamp, foreign key (game) references game (uuid))")
 
     err3 := tx.Commit()
 
@@ -291,5 +293,5 @@ func main() {
     r.HandleFunc("/auth/slack/callback", AuthHandler)
 
     // bind to port
-    http.ListenAndServe(":" + PORT, r)
+    http.ListenAndServe(":"+PORT, r)
 }
