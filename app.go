@@ -17,10 +17,10 @@ import (
 
 var db *sql.DB
 
-var DB = os.Getenv("DB")
 var PORT = os.Getenv("PORT")
 var SLACK_CLIENT = os.Getenv("SLACK_CLIENT")
 var SLACK_SECRET = os.Getenv("SLACK_SECRET")
+var DATABASE_URL = os.Getenv("DATABASE_URL")
 
 ///////////////////////////////////////////////////////
 // Response structs
@@ -254,7 +254,7 @@ func main() {
 
     var err1 error
 
-    db, err1 = sql.Open("postgres", DB)
+    db, err1 = sql.Open("postgres", DATABASE_URL)
 
     if err1 != nil {
         log.Fatal(err1)
