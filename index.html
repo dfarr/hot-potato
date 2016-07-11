@@ -1,7 +1,35 @@
-<a href="https://slack.com/oauth/authorize?scope=commands,bot&client_id={{.Client}}">
-    <img alt="Add to Slack" 
-         height="40" 
-         width="139" 
-         src="https://platform.slack-edge.com/img/add_to_slack.png" 
-         srcset="https://platform.slack-edge.com/img/add_to_slack.png 1x, https://platform.slack-edge.com/img/add_to_slack@2x.png 2x" />
-</a>
+<html>
+
+<head>
+  <link href="//cdnjs.cloudflare.com/ajax/libs/semantic-ui/2.2.2/semantic.min.css" rel="stylesheet" type="text/css">
+</head>
+
+<body>
+  <div class="ui text container" style="padding: 5em 0;">
+    <h1 class="ui dividing header">Hot Potato</h1>
+
+    <a class="tiny ui basic icon button" href="https://github.com/dfarr/hot-potato" target="_blank" style="float: right; margin-top: -50px;">
+      <i class="github icon"></i> Star
+    </a>
+
+    <h3>Pass it on</h3>
+    <p>Pass a hot potato to your friends on Slack.</p>
+
+    <h3>You're on fire</h3>
+    <p>Don't be the last one stuck with the potato, otherwise...</p>
+
+    <p>&nbsp;</p>
+
+    <p style="text-align: center;">
+      <a href="https://slack.com/oauth/authorize?scope=commands,bot&client_id={{.Client}}">
+          <img alt="Add to Slack" 
+               height="40" 
+               width="139" 
+               src="https://platform.slack-edge.com/img/add_to_slack.png" 
+               srcset="https://platform.slack-edge.com/img/add_to_slack.png 1x, https://platform.slack-edge.com/img/add_to_slack@2x.png 2x" />
+      </a>
+    </p>
+  </div>
+</body>
+
+</html>
